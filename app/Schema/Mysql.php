@@ -6,11 +6,75 @@ use PDO;
 use Kanboard\Core\Security;
 use Kanboard\Model\Link;
 
-const VERSION = 91;
+const VERSION = 93;
+
+function version_93($pdo)
+{
+    $pdo->exec("
+        CREATE TABLE user_has_metadata (
+            user_id INT NOT NULL,
+            name VARCHAR(50) NOT NULL,
+            value VARCHAR(255) DEFAULT '',
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(user_id, name)
+        ) ENGINE=InnoDB CHARSET=utf8
+    ");
+
+    $pdo->exec("
+        CREATE TABLE project_has_metadata (
+            project_id INT NOT NULL,
+            name VARCHAR(50) NOT NULL,
+            value VARCHAR(255) DEFAULT '',
+            FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+            UNIQUE(project_id, name)
+        ) ENGINE=InnoDB CHARSET=utf8
+    ");
+
+    $pdo->exec("
+        CREATE TABLE task_has_metadata (
+            task_id INT NOT NULL,
+            name VARCHAR(50) NOT NULL,
+            value VARCHAR(255) DEFAULT '',
+            FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+            UNIQUE(task_id, name)
+        ) ENGINE=InnoDB CHARSET=utf8
+    ");
+
+    $pdo->exec("DROP TABLE project_integrations");
+
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_jabber'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_jabber_server'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_jabber_domain'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_jabber_username'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_jabber_password'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_jabber_nickname'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_jabber_room'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_hipchat'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_hipchat_api_url'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_hipchat_room_id'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_hipchat_room_token'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_slack_webhook'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_slack_webhook_url'");
+    $pdo->exec("DELETE FROM settings WHERE `option`='integration_slack_webhook_channel'");
+}
+
+function version_92($pdo)
+{
+    $pdo->exec("
+        CREATE TABLE project_has_notification_types (
+            id INT NOT NULL AUTO_INCREMENT,
+            project_id INT NOT NULL,
+            notification_type VARCHAR(50) NOT NULL,
+            PRIMARY KEY(id),
+            FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+            UNIQUE(project_id, notification_type)
+        ) ENGINE=InnoDB CHARSET=utf8
+    ");
+}
 
 function version_91($pdo)
 {
-    $pdo->exec("ALTER TABLE custom_filters ADD COLUMN append TINYINT(1) DEFAULT 0");
+    $pdo->exec("ALTER TABLE custom_filters ADD COLUMN `append` TINYINT(1) DEFAULT 0");
 }
 
 function version_90($pdo)
@@ -411,7 +475,6 @@ function version_49($pdo)
     $rq->execute();
 
     foreach ($rq->fetchAll(PDO::FETCH_ASSOC) as $subtask) {
-
         if ($task_id != $subtask['task_id']) {
             $position = 1;
             $task_id = $subtask['task_id'];

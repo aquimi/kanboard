@@ -6,7 +6,70 @@ use Kanboard\Core\Security;
 use PDO;
 use Kanboard\Model\Link;
 
-const VERSION = 86;
+const VERSION = 88;
+
+function version_88($pdo)
+{
+    $pdo->exec("
+        CREATE TABLE user_has_metadata (
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            value TEXT DEFAULT '',
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(user_id, name)
+        )
+    ");
+
+    $pdo->exec("
+        CREATE TABLE project_has_metadata (
+            project_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            value TEXT DEFAULT '',
+            FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+            UNIQUE(project_id, name)
+        )
+    ");
+
+    $pdo->exec("
+        CREATE TABLE task_has_metadata (
+            task_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            value TEXT DEFAULT '',
+            FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+            UNIQUE(task_id, name)
+        )
+    ");
+
+    $pdo->exec("DROP TABLE project_integrations");
+
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_jabber'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_jabber_server'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_jabber_domain'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_jabber_username'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_jabber_password'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_jabber_nickname'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_jabber_room'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_hipchat'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_hipchat_api_url'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_hipchat_room_id'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_hipchat_room_token'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_slack_webhook'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_slack_webhook_url'");
+    $pdo->exec("DELETE FROM settings WHERE \"option\"='integration_slack_webhook_channel'");
+}
+
+function version_87($pdo)
+{
+    $pdo->exec("
+        CREATE TABLE project_has_notification_types (
+            id INTEGER PRIMARY KEY,
+            project_id INTEGER NOT NULL,
+            notification_type TEXT NOT NULL,
+            FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+            UNIQUE(project_id, notification_type)
+        )
+    ");
+}
 
 function version_86($pdo)
 {
@@ -359,7 +422,6 @@ function version_48($pdo)
     $rq->execute();
 
     foreach ($rq->fetchAll(PDO::FETCH_ASSOC) as $subtask) {
-
         if ($task_id != $subtask['task_id']) {
             $position = 1;
             $task_id = $subtask['task_id'];
@@ -419,13 +481,13 @@ function version_45($pdo)
 
 function version_44($pdo)
 {
-	$pdo->exec('ALTER TABLE tasks ADD COLUMN date_moved INTEGER DEFAULT 0');
+    $pdo->exec('ALTER TABLE tasks ADD COLUMN date_moved INTEGER DEFAULT 0');
 
-	/* Update tasks.date_moved from project_activities table if tasks.date_moved = null or 0.
-	 * We take max project_activities.date_creation where event_name in task.create','task.move.column
-	 * since creation date is always less than task moves
-	 */
-	$pdo->exec("UPDATE tasks
+    /* Update tasks.date_moved from project_activities table if tasks.date_moved = null or 0.
+     * We take max project_activities.date_creation where event_name in task.create','task.move.column
+     * since creation date is always less than task moves
+     */
+    $pdo->exec("UPDATE tasks
                 SET date_moved = (
                     SELECT md
                     FROM (

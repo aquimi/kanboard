@@ -198,7 +198,7 @@ class App extends Base
 
         $this->response->html($this->layout('app/notifications', array(
             'title' => t('My notifications'),
-            'notifications' => $this->webNotification->getAll($user['id']),
+            'notifications' => $this->userUnreadNotification->getAll($user['id']),
             'user' => $user,
         )));
     }
@@ -236,8 +236,7 @@ class App extends Base
         // Search by task id or by title
         if (ctype_digit($search)) {
             $filter->filterById($search);
-        }
-        else {
+        } else {
             $filter->filterByTitle($search);
         }
 

@@ -65,8 +65,7 @@ abstract class Base extends PHPUnit_Framework_TestCase
             $pdo->exec('DROP DATABASE '.DB_NAME);
             $pdo->exec('CREATE DATABASE '.DB_NAME);
             $pdo = null;
-        }
-        else if (DB_DRIVER === 'postgres') {
+        } elseif (DB_DRIVER === 'postgres') {
             $pdo = new PDO('pgsql:host='.DB_HOSTNAME, DB_USERNAME, DB_PASSWORD);
             $pdo->exec('DROP DATABASE '.DB_NAME);
             $pdo->exec('CREATE DATABASE '.DB_NAME.' WITH OWNER '.DB_USERNAME);
@@ -88,6 +87,12 @@ abstract class Base extends PHPUnit_Framework_TestCase
         $this->container['logger']->setLogger(new File('/dev/null'));
         $this->container['httpClient'] = new FakeHttpClient;
         $this->container['emailClient'] = $this->getMockBuilder('EmailClient')->setMethods(array('send'))->getMock();
+
+        $this->container['userNotificationType'] = $this
+            ->getMockBuilder('\Kanboard\Model\UserNotificationType')
+            ->setConstructorArgs(array($this->container))
+            ->setMethods(array('getType', 'getSelectedTypes'))
+            ->getMock();
     }
 
     public function tearDown()
